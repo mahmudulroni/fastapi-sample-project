@@ -1,46 +1,37 @@
 import uuid
 from typing import Any
-
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import col, delete, func, select
+from sqlmodel import select, func
 
 from app.modules.user import service, schemas, models
 from app.shared.schemas import Message
-from app.api.dependency import (
-    CurrentUser,
-    SessionDep,
-    get_current_active_superuser,
-)
-from app.core.config import settings
-from app.core.security import get_password_hash, verify_password
+from app.api.dependency import SessionDep, CurrentUser, get_current_active_superuser
+from app.core.security import verify_password, get_password_hash
 from app.shared.utils import generate_new_account_email, send_email
+from app.core.config import settings
 
 router = APIRouter(dependencies=[Depends(get_current_active_superuser)])
 
 
 @router.get("/", response_model=schemas.UsersPublic)
 def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
-    count_statement = select(func.count()).select_from(models.User)
-    count = session.exec(count_statement).one()
-    statement = select(models.User).offset(skip).limit(limit)
-    users = session.exec(statement).all()
+    count = session.exec(select(func.count()).select_from(models.User)).one()
+    users = session.exec(select(models.User).offset(skip).limit(limit)).all()
     return schemas.UsersPublic(data=users, count=count)
 
 
 @router.post("/", response_model=schemas.UserPublic)
 def create_user(*, session: SessionDep, user_in: schemas.UserCreate) -> Any:
-    user = service.get_user_by_email(session=session, email=user_in.email)
-    if user:
+    existing = service.get_user_by_email(session=session, email=user_in.email)
+    if existing:
         raise HTTPException(
-            status_code=400, detail="The user with this email already exists in the system.")
-
+            status_code=400, detail="User with this email already exists")
     user = service.create_user(session=session, user_create=user_in)
-    if settings.emails_enabled and user_in.email:
+    if settings.emails_enabled:
         email_data = generate_new_account_email(
-            email_to=user_in.email, username=user_in.email, password=user_in.password
-        )
+            email_to=user.email, username=user.email, password=user_in.password)
         send_email(
-            email_to=user_in.email,
+            email_to=user.email,
             subject=email_data.subject,
             html_content=email_data.html_content,
         )
@@ -55,8 +46,9 @@ def update_user_me(*, session: SessionDep, user_in: schemas.UserUpdateMe, curren
         if existing_user and existing_user.id != current_user.id:
             raise HTTPException(
                 status_code=409, detail="User with this email already exists")
-    user_data = user_in.model_dump(exclude_unset=True)
-    current_user.sqlmodel_update(user_data)
+    user_data = user_in.dict(exclude_unset=True)
+    for key, value in user_data.items():
+        setattr(current_user, key, value)
     session.add(current_user)
     session.commit()
     session.refresh(current_user)
@@ -92,54 +84,49 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
 
 
 @router.post("/signup", response_model=schemas.UserPublic, dependencies=[])
-def register_user(session: SessionDep, user_in: schemas.UserRegister) -> Any:
+def register_user(session: SessionDep, user_in: schemas.UserCreate) -> Any:
     user = service.get_user_by_email(session=session, email=user_in.email)
     if user:
         raise HTTPException(
-            status_code=400, detail="The user with this email already exists in the system")
-    user_create = schemas.UserCreate.model_validate(user_in)
-    user = service.create_user(session=session, user_create=user_create)
+            status_code=400, detail="User with this email already exists")
+    user = service.create_user(session=session, user_create=user_in)
     return user
 
 
 @router.get("/{user_id}", response_model=schemas.UserPublic)
 def read_user_by_id(user_id: uuid.UUID, session: SessionDep, current_user: CurrentUser) -> Any:
     user = session.get(models.User, user_id)
-    if user == current_user:
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user == current_user or current_user.is_superuser:
         return user
-    if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=403, detail="The user doesn't have enough privileges")
-    return user
+    raise HTTPException(status_code=403, detail="Not enough privileges")
 
 
 @router.patch("/{user_id}", response_model=schemas.UserPublic)
 def update_user(*, session: SessionDep, user_id: uuid.UUID, user_in: schemas.UserUpdate) -> Any:
     db_user = session.get(models.User, user_id)
     if not db_user:
-        raise HTTPException(
-            status_code=404, detail="The user with this id does not exist in the system")
+        raise HTTPException(status_code=404, detail="User not found")
     if user_in.email:
         existing_user = service.get_user_by_email(
             session=session, email=user_in.email)
         if existing_user and existing_user.id != user_id:
             raise HTTPException(
                 status_code=409, detail="User with this email already exists")
-    db_user = service.update_user(
+    user = service.update_user(
         session=session, db_user=db_user, user_in=user_in)
-    return db_user
+    return user
 
 
-@router.delete("/{user_id}")
-def delete_user(session: SessionDep, current_user: CurrentUser, user_id: uuid.UUID) -> Message:
+@router.delete("/{user_id}", response_model=Message)
+def delete_user(session: SessionDep, current_user: CurrentUser, user_id: uuid.UUID) -> Any:
     user = session.get(models.User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if user == current_user:
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves")
-    session.exec(delete(models.Item).where(
-        col(models.Item.owner_id) == user_id))
     session.delete(user)
     session.commit()
     return Message(message="User deleted successfully")

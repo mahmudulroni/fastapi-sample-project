@@ -27,3 +27,13 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 uvicorn app.main:app --reload
 ```
+
+### Generate migration file
+```
+alembic revision --autogenerate -m "<comment>"
+```
+
+### Run migration
+```
+alembic upgrade head
+```
