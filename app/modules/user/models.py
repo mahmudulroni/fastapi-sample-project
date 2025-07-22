@@ -1,14 +1,20 @@
-import uuid
-from sqlmodel import Field, SQLModel
+from typing import Optional
+from sqlmodel import SQLModel, Field
+from app.shared.base_model import BaseModel
 
 
 class UserBase(SQLModel):
-    email: str = Field(unique=True, index=True, max_length=255)
+    email: str = Field(index=True, unique=True, max_length=255)
     is_active: bool = True
     is_superuser: bool = False
-    full_name: str | None = Field(default=None, max_length=255)
+    full_name: Optional[str] = Field(default=None, max_length=255)
 
 
-class User(UserBase, table=True):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+class User(BaseModel, table=True):
+    __tablename__ = "users"
+     
+    email: str = Field(index=True, unique=True, max_length=255)
     hashed_password: str
+    is_active: bool = True
+    is_superuser: bool = False
+    full_name: Optional[str] = Field(default=None, max_length=255)
