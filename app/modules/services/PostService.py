@@ -11,7 +11,7 @@ def get_post_by_slug(session: Session, slug: str) -> Optional[Post]:
 
 
 def create_post(session: Session, post_in: PostSchemas.PostCreate) -> Post:
-    post = Post(**post_in.dict())
+    post = Post(**post_in.model_dump())
     session.add(post)
     session.commit()
     session.refresh(post)
@@ -27,7 +27,7 @@ def get_all_posts(session: Session, skip: int = 0, limit: int = 10) -> List[Post
 
 
 def update_post(session: Session, db_post: Post, post_in: PostSchemas.PostUpdate) -> Post:
-    post_data = post_in.dict(exclude_unset=True)
+    post_data = post_in.model_dump(exclude_unset=True)
     db_post.sqlmodel_update(post_data)
     session.add(db_post)
     session.commit()

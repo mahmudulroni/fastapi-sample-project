@@ -12,7 +12,7 @@ def get_category_by_slug(session: Session, slug: str) -> Optional[Category]:
 
 
 def create_category(session: Session, category_in: CategoryCreate) -> Category:
-    category = Category(**category_in.dict())
+    category = Category(**category_in.model_dump())
     session.add(category)
     session.commit()
     session.refresh(category)
@@ -28,7 +28,7 @@ def get_all_categories(session: Session, skip: int = 0, limit: int = 10) -> List
 
 
 def update_category(session: Session, db_category: Category, category_in: CategoryUpdate) -> Category:
-    category_data = category_in.dict(exclude_unset=True)
+    category_data = category_in.model_dump(exclude_unset=True)
     db_category.sqlmodel_update(category_data)
     session.add(db_category)
     session.commit()
