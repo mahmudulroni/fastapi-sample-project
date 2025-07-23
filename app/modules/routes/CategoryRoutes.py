@@ -5,7 +5,7 @@ from app.modules.schemas import CategorySchemas
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import select, func
 from app.modules.services import CategoryService
-from app.shared.schemas import Message
+from app.modules.shared.schemas import Message
 from app.dependency import SessionDep, get_current_active_superuser
 
 router = APIRouter(dependencies=[Depends(get_current_active_superuser)])
