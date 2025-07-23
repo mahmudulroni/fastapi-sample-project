@@ -1,17 +1,18 @@
 from typing import Optional
+from app.modules.models import UserModel
 from sqlmodel import Session
-from app.modules.user import models, schemas
+from app.modules.schemas import UserSchemas
 from app.core.security import get_password_hash
 
 
-def get_user_by_email(session: Session, email: str) -> Optional[models.User]:
+def get_user_by_email(session: Session, email: str) -> Optional[UserModel.User]:
     return session.exec(
-        models.User.select().where(models.User.email == email)
+        UserModel.User.select().where(UserModel.User.email == email)
     ).first()
 
 
-def create_user(session: Session, user_create: schemas.UserCreate) -> models.User:
-    db_obj = models.User(
+def create_user(session: Session, user_create: UserSchemas.UserCreate) -> UserModel.User:
+    db_obj = UserModel.User(
         email=user_create.email,
         hashed_password=get_password_hash(user_create.password),
         full_name=user_create.full_name,
@@ -24,7 +25,7 @@ def create_user(session: Session, user_create: schemas.UserCreate) -> models.Use
     return db_obj
 
 
-def update_user(session: Session, db_user: models.User, user_in: schemas.UserUpdate) -> models.User:
+def update_user(session: Session, db_user: UserModel.User, user_in: UserSchemas.UserUpdate) -> UserModel.User:
     user_data = user_in.dict(exclude_unset=True)
     if "password" in user_data:
         user_data["hashed_password"] = get_password_hash(
