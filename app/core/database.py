@@ -3,9 +3,9 @@ from sqlmodel import Session, SQLModel, create_engine, select
 from app.core.config import settings
 
 # If you need to create a default user, uncomment the following lines
-# from app.modules.user.schemas import UserCreate
-# from app.modules.user.models import User
-# from app.modules.user.service import create_user
+# from app.modules.schemas.UserSchemas import UserCreate
+# from app.modules.models.UserModel import User
+# from app.modules.services.UserService import create_user
 
 engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
