@@ -14,13 +14,19 @@ router = APIRouter(dependencies=[Depends(get_current_active_superuser)])
 
 @router.get("/", response_model=PostSchemas.PostsPublic)
 def read_posts(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
-    count = session.exec(select(func.count()).select_from(PostModel.Post)).one()
+    count = session.exec(
+        select(func.count()).select_from(PostModel.Post)).one()
     posts = PostService.get_all_posts(session, skip, limit)
     return PostSchemas.PostsPublic(data=posts, count=count)
 
 
 @router.post("/", response_model=PostSchemas.PostRead)
 def create_post(session: SessionDep, post_in: PostSchemas.PostCreate) -> Any:
+    existing = PostService.get_post_by_slug(
+        session=session, slug=post_in.slug)
+    if existing:
+        raise HTTPException(
+            status_code=400, detail="Post slug already exists")
     return PostService.create_post(session, post_in)
 
 
