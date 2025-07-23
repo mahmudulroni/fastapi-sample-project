@@ -6,10 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import select, func
 
 from app.modules.services import UserService
-from app.shared.schemas import Message
+from app.modules.shared.schemas import Message
 from app.dependency import SessionDep, CurrentUser, get_current_active_superuser
 from app.core.security import verify_password, get_password_hash
-from app.shared.utils import generate_new_account_email, send_email
+from app.modules.shared.utils import generate_new_account_email, send_email
 from app.core.config import settings
 
 router = APIRouter(dependencies=[Depends(get_current_active_superuser)])

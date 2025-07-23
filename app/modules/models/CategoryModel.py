@@ -1,7 +1,7 @@
 from typing import Optional
 from sqlmodel import Field
 
-from app.shared.base_model import BaseModel
+from app.modules.shared.base_model import BaseModel
 
 
 class Category(BaseModel, table=True):

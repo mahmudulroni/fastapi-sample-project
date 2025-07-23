@@ -10,9 +10,9 @@ from app.core import security
 from app.core.config import settings
 from app.core.security import get_password_hash
 from app.modules.schemas.UserSchemas import NewPassword, UserPublic
-# from app.shared.schemas import Message
+# from app.modules.shared.schemas import Message
 from app.modules.schemas.AuthSchemas import Token
-# from app.shared.utils import (
+# from app.modules.shared.utils import (
 #     generate_password_reset_token,
 #     generate_reset_password_email,
 #     send_email,
