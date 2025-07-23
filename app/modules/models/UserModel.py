@@ -1,6 +1,6 @@
 from typing import Optional
 from sqlmodel import SQLModel, Field
-from app.shared.base_model import BaseModel
+from app.modules.shared.base_model import BaseModel
 
 
 class UserBase(SQLModel):

@@ -5,7 +5,7 @@ from typing import Optional, List
 from sqlalchemy import Column, JSON
 from sqlmodel import Field
 
-from app.shared.base_model import BaseModel
+from app.modules.shared.base_model import BaseModel
 
 
 class Post(BaseModel, table=True):
