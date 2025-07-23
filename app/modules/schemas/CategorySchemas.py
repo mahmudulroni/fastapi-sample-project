@@ -20,7 +20,6 @@ class CategoryUpdate(BaseModel):
     slug: Optional[str] = None
     description: Optional[str] = None
     image: Optional[str] = None
-    updated_by: Optional[uuid.UUID] = None
 
 
 class CategoryRead(CategoryBase):

@@ -21,6 +21,11 @@ def read_categories(session: SessionDep, skip: int = 0, limit: int = 100) -> Any
 
 @router.post("/", response_model=CategorySchemas.CategoryRead)
 def create_category(session: SessionDep, category_in: CategorySchemas.CategoryCreate) -> Any:
+    existing = CategoryService.get_category_by_slug(
+        session=session, slug=category_in.slug)
+    if existing:
+        raise HTTPException(
+            status_code=400, detail="Category slug already exists")
     return CategoryService.create_category(session, category_in)
 
 

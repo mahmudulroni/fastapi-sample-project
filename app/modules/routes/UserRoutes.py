@@ -17,14 +17,17 @@ router = APIRouter(dependencies=[Depends(get_current_active_superuser)])
 
 @router.get("/", response_model=UserSchemas.UsersPublic)
 def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
-    count = session.exec(select(func.count()).select_from(UserModel.User)).one()
-    users = session.exec(select(UserModel.User).offset(skip).limit(limit)).all()
+    count = session.exec(
+        select(func.count()).select_from(UserModel.User)).one()
+    users = session.exec(
+        select(UserModel.User).offset(skip).limit(limit)).all()
     return UserSchemas.UsersPublic(data=users, count=count)
 
 
 @router.post("/", response_model=UserSchemas.UserPublic)
 def create_user(*, session: SessionDep, user_in: UserSchemas.UserCreate) -> Any:
-    existing = UserService.get_user_by_email(session=session, email=user_in.email)
+    existing = UserService.get_user_by_email(
+        session=session, email=user_in.email)
     if existing:
         raise HTTPException(
             status_code=400, detail="User with this email already exists")
@@ -37,61 +40,6 @@ def create_user(*, session: SessionDep, user_in: UserSchemas.UserCreate) -> Any:
             subject=email_data.subject,
             html_content=email_data.html_content,
         )
-    return user
-
-
-@router.patch("/me", response_model=UserSchemas.UserPublic, dependencies=[])
-def update_user_me(*, session: SessionDep, user_in: UserSchemas.UserUpdateMe, current_user: CurrentUser) -> Any:
-    if user_in.email:
-        existing_user = UserService.get_user_by_email(
-            session=session, email=user_in.email)
-        if existing_user and existing_user.id != current_user.id:
-            raise HTTPException(
-                status_code=409, detail="User with this email already exists")
-    user_data = user_in.dict(exclude_unset=True)
-    for key, value in user_data.items():
-        setattr(current_user, key, value)
-    session.add(current_user)
-    session.commit()
-    session.refresh(current_user)
-    return current_user
-
-
-@router.patch("/me/password", response_model=Message, dependencies=[])
-def update_password_me(*, session: SessionDep, body: UserSchemas.UpdatePassword, current_user: CurrentUser) -> Any:
-    if not verify_password(body.current_password, current_user.hashed_password):
-        raise HTTPException(status_code=400, detail="Incorrect password")
-    if body.current_password == body.new_password:
-        raise HTTPException(
-            status_code=400, detail="New password cannot be the same as the current one")
-    current_user.hashed_password = get_password_hash(body.new_password)
-    session.add(current_user)
-    session.commit()
-    return Message(message="Password updated successfully")
-
-
-@router.get("/me", response_model=UserSchemas.UserPublic, dependencies=[])
-def read_user_me(current_user: CurrentUser) -> Any:
-    return current_user
-
-
-@router.delete("/me", response_model=Message, dependencies=[])
-def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
-    if current_user.is_superuser:
-        raise HTTPException(
-            status_code=403, detail="Super users are not allowed to delete themselves")
-    session.delete(current_user)
-    session.commit()
-    return Message(message="User deleted successfully")
-
-
-@router.post("/signup", response_model=UserSchemas.UserPublic, dependencies=[])
-def register_user(session: SessionDep, user_in: UserSchemas.UserCreate) -> Any:
-    user = UserService.get_user_by_email(session=session, email=user_in.email)
-    if user:
-        raise HTTPException(
-            status_code=400, detail="User with this email already exists")
-    user = UserService.create_user(session=session, user_create=user_in)
     return user
 
 
