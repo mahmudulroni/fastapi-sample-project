@@ -1,6 +1,8 @@
 services:
   api:
     build: .
+    container_name: fastapi
+    image: fastapi:latest
     ports:
       - "5000:5000"
     volumes:
@@ -12,6 +14,7 @@ services:
 
   db:
     image: postgres:17
+    container_name: postgres-database
     restart: always
     environment:
       POSTGRES_USER: postgres
